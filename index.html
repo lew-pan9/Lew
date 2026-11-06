@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="答题闯关">
+<title>答题闯关</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦉</text></svg>">
+<style>
+:root{
+  --bg:#f4f1ea; --card:#fff; --ink:#1f2a37; --muted:#6b7280; --line:#e5e1d8;
+  --accent:#2f6fde; --accent-ink:#fff; --ok:#1f9d55; --ok-bg:#e3f6ea; --bad:#d64545; --bad-bg:#fde8e8;
+  --chip:#eef2fb;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang SC","Helvetica Neue","Microsoft YaHei",sans-serif}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;-webkit-user-select:none;user-select:none}
+.wrap{width:100%;max-width:760px;display:flex;flex-direction:column;gap:16px}
+header{display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:22px;margin:0;display:flex;gap:8px;align-items:center}
+.gear{background:transparent;font-size:24px;padding:8px;opacity:.55}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px;box-shadow:0 2px 0 rgba(0,0,0,.03)}
+.tag{display:inline-block;background:var(--chip);color:var(--accent);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:600}
+.progress{color:var(--muted);font-size:15px}
+.prompt{font-size:30px;line-height:1.5;margin:18px 0 8px;font-weight:600;word-break:break-word}
+.prompt .big{font-size:56px;display:block;margin-bottom:6px}
+.prompt .sub{display:block;font-size:18px;color:var(--muted);font-weight:400;margin-top:6px}
+.hint{color:var(--muted);font-size:16px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.choice{background:var(--chip);border:2px solid transparent;border-radius:16px;padding:18px 12px;font-size:24px;font-weight:600;min-height:72px}
+.choice:active{transform:scale(.98)}
+.choice.right{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.choice.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.display{font-size:44px;font-weight:700;text-align:center;border:2px solid var(--line);border-radius:16px;padding:10px;min-height:76px;margin-top:16px;letter-spacing:2px}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.pad button{background:var(--chip);border-radius:14px;font-size:30px;font-weight:600;padding:16px 0}
+.pad .go{background:var(--accent);color:var(--accent-ink)}
+.slots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:16px}
+.slot{width:52px;height:60px;border-bottom:4px solid var(--accent);font-size:36px;font-weight:700;display:flex;align-items:center;justify-content:center;text-transform:lowercase}
+.tiles{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.tile{width:58px;height:58px;border-radius:14px;background:var(--chip);font-size:30px;font-weight:700}
+.tile[disabled]{opacity:.25}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.btn{background:var(--chip);border-radius:14px;padding:14px 20px;font-size:20px;font-weight:600}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.small{font-size:16px;padding:10px 14px}
+.btn.danger{background:var(--bad-bg);color:var(--bad)}
+.mic{font-size:22px;padding:18px 26px}
+.mic.on{background:var(--bad);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.7}}
+.words{font-size:22px;margin-top:14px;line-height:1.8}
+.words .w-ok{color:var(--ok);font-weight:700}
+.words .w-miss{color:var(--bad);text-decoration:underline}
+.feedback{margin-top:16px;border-radius:14px;padding:14px 16px;font-size:20px;display:none}
+.feedback.ok{display:block;background:var(--ok-bg);color:var(--ok)}
+.feedback.bad{display:block;background:var(--bad-bg);color:var(--bad)}
+.status{text-align:center;padding:36px 24px}
+.status .emoji{font-size:72px}
+.status .time{font-size:64px;font-weight:800;margin:8px 0;font-variant-numeric:tabular-nums}
+.status p{font-size:20px;color:var(--muted);margin:6px 0}
+.hidden{display:none!important}
+/* parent */
+.form{display:grid;grid-template-columns:auto 1fr;gap:12px 16px;align-items:center;margin-top:12px}
+.form label{font-size:17px;color:var(--muted)}
+.form input[type=number],.form select,.pin-in{font:inherit;font-size:18px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
+.checks{display:flex;flex-wrap:wrap;gap:8px 16px}
+.checks label{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:15px;margin-top:8px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500}
+h2{font-size:19px;margin:0 0 4px}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.stat{background:var(--chip);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:26px}
+.stat span{font-size:13px;color:var(--muted)}
+.ok-t{color:var(--ok)} .bad-t{color:var(--bad)}
+@media (max-width:520px){
+  .prompt{font-size:24px}.choice{font-size:20px}.stat-row{grid-template-columns:1fr 1fr}
+  .slot{width:40px;height:52px;font-size:30px}.tile{width:50px;height:50px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🦉 答题闯关</h1>
+    <button class="gear" id="gearBtn" aria-label="家长设置">⚙️</button>
+  </header>
+
+  <!-- 首次设置 -->
+  <section class="card hidden" id="setupView">
+    <h2>欢迎！先由家长设置一个 4 位密码</h2>
+    <p class="hint">孩子修改设置、跳过题目都需要这个密码。</p>
+    <input class="pin-in" id="setupPin" type="password" inputmode="numeric" maxlength="8" placeholder="输入 4–8 位数字">
+    <div class="row"><button class="btn primary" id="setupOk">保存并开始</button></div>
+  </section>
+
+  <!-- 解锁中 -->
+  <section class="card status hidden" id="statusView">
+    <div class="emoji">✅</div>
+    <p>已解锁，可以继续使用</p>
+    <div class="time" id="remain">10:00</div>
+    <p>时间到后会自动出题。现在可以切回你刚才的 App 啦。</p>
+    <p class="hidden" id="syncTip" style="font-size:16px">如果弹出“在快捷指令中打开”，请点<b>打开</b>，否则还会被带回这里。</p>
+    <div class="row hidden" id="syncRow" style="justify-content:center"><button class="btn" id="syncBtn">🔄 重新同步解锁</button></div>
+  </section>
+
+  <!-- 答题 -->
+  <section class="card hidden" id="quizView">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span class="tag" id="qTag">数学</span>
+      <span class="progress" id="qProgress"></span>
+    </div>
+    <div class="prompt" id="qPrompt"></div>
+    <div id="qBody"></div>
+    <div class="feedback" id="qFeedback"></div>
+  </section>
+
+  <!-- 家长面板 -->
+  <section class="card hidden" id="parentView">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>家长面板</h2>
+      <button class="btn small" id="parentClose">返回</button>
+    </div>
+
+    <div class="stat-row" id="todayStats"></div>
+
+    <h2 style="margin-top:22px">设置</h2>
+    <div class="form">
+      <label>年级</label>
+      <select id="sGrade"><option value="1">一年级</option><option value="2">二年级</option><option value="3">三年级</option></select>
+      <label>答题间隔（分钟）</label>
+      <input type="number" id="sInterval" min="1" max="120">
+      <label>每次需答对</label>
+      <select id="sNeed"><option value="1">1 题</option><option value="2">2 题</option><option value="3">3 题</option></select>
+      <label>题型</label>
+      <div class="checks">
+        <label><input type="checkbox" id="tMath"> 数学</label>
+        <label><input type="checkbox" id="tSpeak"> 英语口语</label>
+        <label><input type="checkbox" id="tEng"> 英语单词/语法</label>
+        <label><input type="checkbox" id="tChn"> 语文</label>
+      </div>
+      <label>口语通过线</label>
+      <select id="sSpeakPass"><option value="0.6">宽松 60%</option><option value="0.75">标准 75%</option><option value="0.9">严格 90%</option></select>
+      <label>快捷指令联动</label>
+      <label style="color:var(--ink)"><input type="checkbox" id="sLink"> 解锁时运行快捷指令（配合“检查答题”自动化，未答题就反复弹回本页）</label>
+      <label>快捷指令名称</label>
+      <input class="pin-in" id="sScName" placeholder="答题解锁">
+      <label>新密码</label>
+      <input class="pin-in" type="password" inputmode="numeric" id="sPin" placeholder="不改请留空">
+    </div>
+    <div class="row">
+      <button class="btn primary" id="saveSettings">保存设置</button>
+      <button class="btn" id="grant30">直接解锁 30 分钟</button>
+      <button class="btn" id="askNow">立即出题</button>
+    </div>
+    <p class="hint" id="speechSupport"></p>
+
+    <h2 style="margin-top:22px">近 7 天</h2>
+    <table id="weekTable"></table>
+
+    <h2 style="margin-top:22px">最近记录</h2>
+    <table id="logTable"></table>
+    <div class="row"><button class="btn small danger" id="clearLog">清空记录</button></div>
+  </section>
+</div>
+
+<script>
+'use strict';
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = arr => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sampleOthers = (pool, exclude, n) => shuffle([...new Set(pool)].filter(x => !exclude.includes(x))).slice(0, n);
+
+/* ================= 存储 ================= */
+const KEY = 'quizgate_v1';
+const DEFAULTS = { pin: null, grade: 2, interval: 10, need: 1, types: { math: true, speak: true, eng: true, chn: true }, speakPass: 0.75, link: false, scName: '答题解锁' };
+let S;
+function load() {
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) {}
+  S = Object.assign({ settings: { ...DEFAULTS }, passUntil: 0, log: [], recent: [] }, raw || {});
+  S.settings = Object.assign({ ...DEFAULTS }, S.settings);
+  S.settings.types = Object.assign({ ...DEFAULTS.types }, S.settings.types);
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function addLog(entry) { S.log.push({ t: Date.now(), ...entry }); if (S.log.length > 3000) S.log = S.log.slice(-3000); save(); }
+
+/* ================= 语音 ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canSpeak = 'speechSynthesis' in window;
+function say(text, lang = 'en-US', rate = 0.85) {
+  if (!canSpeak) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang; u.rate = rate;
+  const v = speechSynthesis.getVoices().find(v => v.lang && v.lang.replace('_', '-').startsWith(lang));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+let audioCtx;
+function beep() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    [660, 880].forEach((f, i) => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination);
+      const t = audioCtx.currentTime + i * 0.18;
+      g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      o.start(t); o.stop(t + 0.17);
+    });
+  } catch (e) {}
+}
+
+/* ================= 题库：数学 ================= */
+function carryPair(minA, maxA, maxSum) { // 个位必进位
+  for (;;) { const a = rnd(minA, maxA), b = rnd(minA <= 20 ? 3 : 12, maxSum - a); if (b > 0 && (a % 10) + (b % 10) >= 10 && a + b <= maxSum) return [a, b]; }
+}
+function borrowPair(minA, maxA, minB) { // 个位必退位
+  for (;;) { const a = rnd(minA, maxA), b = rnd(minB, a - 1); if ((b % 10) > (a % 10) && a - b > 0) return [a, b]; }
+}
+const NAMES = ['小明', '小红', '小华', '乐乐', '豆豆', '妞妞', '小宇', '甜甜'];
+const MATH = {
+  1: [
+    () => { const a = rnd(13, 88), b = rnd(10 - (a % 10), 9); return { p: `${a} + ${b} = ?`, a: a + b, e: '个位相加满十，要向十位进 1。' }; },
+    () => { const [a, b] = (() => { for (;;) { const a = rnd(21, 97), b = rnd(2, 9); if (b > a % 10) return [a, b]; } })(); return { p: `${a} − ${b} = ?`, a: a - b, e: '个位不够减，向十位借 1 当 10。' }; },
+    () => { const a = rnd(6, 9), b = rnd(5, 9), c = rnd(3, a + b - 2); return { p: `${a} + ${b} − ${c} = ?`, a: a + b - c, e: '从左往右依次计算。' }; },
+    () => { const b = rnd(4, 9), x = rnd(6, 15); return { p: `□ + ${b} = ${x + b}，□ = ?`, a: x, e: `□ = ${x + b} − ${b}。` }; },
+    () => { const n = pick(NAMES), a = rnd(8, 15), b = rnd(3, 7), c = rnd(2, 9); return { p: `树上有 ${a} 只小鸟，飞走了 ${b} 只，又飞来了 ${c} 只。现在树上有几只？`, a: a - b + c, e: `${a} − ${b} + ${c} = ${a - b + c}` }; },
+    () => { const a = rnd(28, 60), b = rnd(10, a - 12); return { p: `${pick(NAMES)}有 ${a} 张贴纸，比妹妹多 ${b} 张。妹妹有几张？`, a: a - b, e: `比妹妹多，妹妹就少：${a} − ${b} = ${a - b}` }; },
+  ],
+  2: [
+    () => { const [a, b] = carryPair(15, 68, 99); return { p: `${a} + ${b} = ?`, a: a + b, e: '个位满十向十位进 1。' }; },
+    () => { const [a, b] = borrowPair(41, 98, 12); return { p: `${a} − ${b} = ?`, a: a - b, e: '个位不够减，从十位退 1。' }; },
+    () => { const a = rnd(3, 9), b = rnd(3, 9); return { p: `${a} × ${b} = ?`, a: a * b, e: `口诀：${Math.min(a, b)}${Math.max(a, b)}${a * b < 10 ? '得' : ''}${a * b}` }; },
+    () => { const a = rnd(3, 9), b = rnd(3, 9), c = rnd(5, 30), plus = Math.random() < .5 && a * b > c; return plus ? { p: `${a} × ${b} − ${c} = ?`, a: a * b - c, e: '先算乘法，再算减法。' } : { p: `${a} × ${b} + ${c} = ?`, a: a * b + c, e: '先算乘法，再算加法。' }; },
+    () => { const b = rnd(3, 9), x = rnd(3, 9); return { p: `□ × ${b} = ${x * b}，□ = ?`, a: x, e: `想口诀：几乘 ${b} 得 ${x * b}？` }; },
+    () => { const d = rnd(3, 9), q = rnd(3, 9); return { p: `${d * q} ÷ ${d} = ?`, a: q, e: `想口诀：${d} 乘几得 ${d * q}？` }; },
+    () => { const a = rnd(4, 9), b = rnd(3, 8), c = rnd(3, a * b - 5); return { p: `每盒有 ${a} 支铅笔，${pick(NAMES)}买了 ${b} 盒，送给同学 ${c} 支。还剩多少支？`, a: a * b - c, e: `${a} × ${b} − ${c} = ${a * b - c}` }; },
+    () => { const a = rnd(30, 60), b = rnd(12, 29), c = rnd(15, 35); return { p: `${a} + ${b} − ${c} = ?`, a: a + b - c, e: '从左往右依次计算。' }; },
+  ],
+  3: [
+    () => { const [a, b] = carryPair(125, 689, 999); return { p: `${a} + ${b} = ?`, a: a + b, e: '相同数位对齐，满十进一。' }; },
+    () => { const [a, b] = borrowPair(402, 986, 108); return { p: `${a} − ${b} = ?`, a: a - b, e: '哪一位不够减，就向前一位退 1。' }; },
+    () => { const a = rnd(13, 49), b = rnd(3, 9); return { p: `${a} × ${b} = ?`, a: a * b, e: `${a} × ${b} = ${Math.floor(a / 10) * 10} × ${b} + ${a % 10} × ${b}` }; },
+    () => { const d = rnd(3, 9), q = rnd(3, 9), r = rnd(1, d - 1), n = d * q + r; return Math.random() < .5 ? { p: `${n} ÷ ${d} = ? …… ${r}<span class="sub">求商</span>`, a: q, e: `${d} × ${q} = ${d * q}，${n} − ${d * q} = ${r}` } : { p: `${n} ÷ ${d} = ${q} …… ?<span class="sub">求余数</span>`, a: r, e: `${n} − ${d} × ${q} = ${r}，余数要比除数小。` }; },
+    () => { const b = rnd(3, 9), q = rnd(4, 9), c = rnd(12, 48); return { p: `${b * q} ÷ ${b} + ${c} = ?`, a: q + c, e: '先算除法，再算加法。' }; },
+    () => { const a = rnd(12, 30), b = rnd(8, 20), c = rnd(2, 4); return { p: `(${a} + ${b}) × ${c} = ?`, a: (a + b) * c, e: '先算括号里的。' }; },
+    () => { const p = rnd(6, 15), n = rnd(3, 6), m = p * n + rnd(5, 40); return { p: `一张门票 ${p} 元，买 ${n} 张，付了 ${m} 元，应找回多少元？`, a: m - p * n, e: `${m} − ${p} × ${n} = ${m - p * n}` }; },
+    () => { const per = rnd(4, 8), k = rnd(5, 9), left = rnd(1, per - 1), tot = per * k + left; return { p: `${tot} 个苹果，每 ${per} 个装一袋，最多能装满几袋？`, a: k, e: `${tot} ÷ ${per} = ${k} …… ${left}` }; },
+  ]
+};
+function genMath(g) {
+  const lvl = Math.random() < .25 && g > 1 ? g - 1 : g;
+  const r = pick(MATH[lvl])();
+  return { cat: 'math', kind: 'num', prompt: r.p, answer: r.a, explain: r.e, sig: 'm' + r.p };
+}
+
+/* ================= 题库：英语单词 ================= */
+// [emoji, 英文, 中文, 起始年级]
+const WORDS = [
+  ['🍎','apple','苹果',1],['🍌','banana','香蕉',1],['🍊','orange','橙子',1],['🍐','pear','梨',1],['🍇','grape','葡萄',2],['🍉','watermelon','西瓜',3],['🍓','strawberry','草莓',3],
+  ['🥚','egg','鸡蛋',1],['🥛','milk','牛奶',1],['🍞','bread','面包',1],['🍚','rice','米饭',2],['🎂','cake','蛋糕',1],['💧','water','水',1],['🧃','juice','果汁',2],
+  ['🐱','cat','猫',1],['🐶','dog','狗',1],['🐷','pig','猪',1],['🦆','duck','鸭子',1],['🐰','rabbit','兔子',2],['🐵','monkey','猴子',2],['🐯','tiger','老虎',2],['🦁','lion','狮子',2],
+  ['🐼','panda','熊猫',1],['🐘','elephant','大象',2],['🐦','bird','鸟',1],['🐟','fish','鱼',1],['🐴','horse','马',2],['🐮','cow','奶牛',2],['🐑','sheep','绵羊',2],['🐻','bear','熊',1],
+  ['📖','book','书',1],['🖊️','pen','钢笔',1],['✏️','pencil','铅笔',1],['📏','ruler','尺子',1],['🎒','bag','书包',1],['🪑','chair','椅子',2],
+  ['☀️','sun','太阳',1],['🌙','moon','月亮',2],['⭐','star','星星',2],['🌳','tree','树',2],['🌸','flower','花',2],['🌧️','rain','雨',2],['❄️','snow','雪',3],
+  ['🚗','car','小汽车',1],['🚌','bus','公共汽车',1],['🚲','bike','自行车',2],['🚢','ship','轮船',2],['✈️','plane','飞机',2],['🚆','train','火车',2],
+  ['⚽','ball','球',1],['🪁','kite','风筝',2],['👒','hat','帽子',2],['👟','shoe','鞋',2],['👗','dress','连衣裙',3],['👕','shirt','衬衫',3],
+  ['👁️','eye','眼睛',1],['👂','ear','耳朵',1],['👃','nose','鼻子',1],['👄','mouth','嘴',1],['✋','hand','手',1],['🦶','foot','脚',2],
+  ['🔴','red','红色',1],['🔵','blue','蓝色',1],['🟢','green','绿色',1],['🟡','yellow','黄色',1],['⚫','black','黑色',2],['⚪','white','白色',2],
+  ['🏠','house','房子',2],['🚪','door','门',2],['🪟','window','窗户',2],['⏰','clock','钟',2],['📱','phone','电话',3],['💻','computer','电脑',3],
+  ['👩‍🏫','teacher','老师',2],['👨‍⚕️','doctor','医生',3],['😀','happy','开心的',2],['😢','sad','难过的',3],['🏫','school','学校',2],['🎁','gift','礼物',3]
+];
+const GRAMMAR = [
+  // [句子(用 ___ 代空), 正确, [干扰], 解释, 年级]
+  ['I ___ a student.', 'am', ['is', 'are'], 'I 后面用 am。', 1],
+  ['She ___ my sister.', 'is', ['am', 'are'], 'she/he/it 后面用 is。', 1],
+  ['They ___ my friends.', 'are', ['is', 'am'], '复数（they/we/you）后面用 are。', 1],
+  ['This is ___ apple.', 'an', ['a', 'two'], 'apple 以元音音素开头，用 an。', 1],
+  ['I have ___ pencil.', 'a', ['an', 'two'], 'pencil 以辅音开头，用 a。', 1],
+  ['___ is your name?', 'What', ['Who', 'Where'], '问名字用 What。', 1],
+  ['___ are you? — I\'m fine, thank you.', 'How', ['What', 'Who'], '问身体好不好用 How。', 1],
+  ['___ is my bag? — It\'s on the desk.', 'Where', ['What', 'How'], '问地点用 Where。', 2],
+  ['___ old are you? — I\'m eight.', 'How', ['What', 'Who'], '问年龄用 How old。', 1],
+  ['What colour ___ it? — It\'s red.', 'is', ['are', 'am'], 'it 后面用 is。', 1],
+  ['He ___ a new bike.', 'has', ['have', 'is'], '他/她“有”用 has。', 2],
+  ['I ___ two cats.', 'have', ['has', 'am'], 'I 后面“有”用 have。', 2],
+  ['There ___ three books on the desk.', 'are', ['is', 'am'], '三本书是复数，用 are。', 2],
+  ['There ___ a bird in the tree.', 'is', ['are', 'am'], '一只鸟是单数，用 is。', 2],
+  ['I like ___. They are cute.', 'pandas', ['panda', 'a panda'], 'like 后面说一类动物常用复数。', 2],
+  ['The book is ___ the desk.', 'on', ['in', 'at'], '在桌子上面用 on。', 1],
+  ['The cat is ___ the box.', 'in', ['on', 'at'], '在盒子里面用 in。', 1],
+  ['Can you swim? — Yes, I ___.', 'can', ['do', 'am'], 'Can 问，就用 can 答。', 2],
+  ['Do you like milk? — No, I ___.', "don't", ["can't", "isn't"], 'Do 问，否定回答用 don\'t。', 2],
+  ['Is this your pen? — Yes, it ___.', 'is', ['are', 'am'], 'Is 问，就用 is 答。', 1],
+  ['Look ___ the blackboard.', 'at', ['on', 'in'], 'look at 看……', 2],
+  ['These ___ my shoes.', 'are', ['is', 'am'], 'these 是复数，用 are。', 2],
+  ['She ___ to school every day.', 'goes', ['go', 'going'], '她（第三人称单数）每天做的事，动词加 s/es。', 3],
+  ['My father ___ TV every evening.', 'watches', ['watch', 'watching'], '第三人称单数，watch 加 es。', 3],
+  ['I ___ football on Sundays.', 'play', ['plays', 'playing'], 'I 后面动词用原形。', 3],
+  ['Let\'s ___ a song!', 'sing', ['sings', 'singing'], "Let's 后面跟动词原形。", 2],
+  ['How many ___ do you have?', 'books', ['book', 'a book'], 'How many 后面跟名词复数。', 2],
+  ['It\'s seven o\'clock. It\'s time ___ breakfast.', 'for', ['to', 'at'], "It's time for + 名词。", 3],
+  ['I can see two ___.', 'boxes', ['boxs', 'box'], 'box 的复数是 boxes。', 3],
+  ['___ you like apples? — Yes, I do.', 'Do', ['Are', 'Is'], '用 Yes, I do 回答，就用 Do 提问。', 2],
+];
+function wordsFor(g) { return WORDS.filter(w => w[3] <= g); }
+function genEng(g) {
+  const pool = wordsFor(g);
+  const r = Math.random();
+  if (r < 0.3) { // 语法
+    const gp = GRAMMAR.filter(x => x[4] <= g), q = pick(gp);
+    return { cat: 'eng', kind: 'choice', prompt: q[0].replace('___', '<u>&nbsp;&nbsp;?&nbsp;&nbsp;</u>'), answer: q[1], options: shuffle([q[1], ...q[2]]), explain: q[3], sig: 'g' + q[0] };
+  }
+  const w = pick(pool);
+  const others = sampleOthers(pool.map(x => x[1]), [w[1]], 3);
+  if (r < 0.5) return { cat: 'eng', kind: 'choice', prompt: `<span class="big">${w[0]}</span>这个用英语怎么说？`, answer: w[1], options: shuffle([w[1], ...others]), explain: `${w[1]}：${w[2]}`, sig: 'e1' + w[1], tts: w[1] };
+  if (r < 0.65) {
+    const zh = sampleOthers(pool.map(x => x[2]), [w[2]], 3);
+    return { cat: 'eng', kind: 'choice', prompt: `<b style="font-size:44px">${w[1]}</b><span class="sub">是什么意思？</span>`, answer: w[2], options: shuffle([w[2], ...zh]), explain: `${w[1]}：${w[2]}`, sig: 'e2' + w[1], tts: w[1] };
+  }
+  if (r < 0.8 && canSpeak) return { cat: 'eng', kind: 'choice', prompt: `🔊 听一听，选出你听到的单词<span class="sub">点下面的“再听一次”可以重复听</span>`, answer: w[1], options: shuffle([w[1], ...others]), explain: `听到的是 ${w[1]}（${w[2]}）`, sig: 'e3' + w[1], listen: w[1] };
+  // 拼写
+  const sp = pool.filter(x => x[1].length >= 3 && x[1].length <= (g === 1 ? 5 : 8) && /^[a-z]+$/.test(x[1]));
+  const s = pick(sp);
+  return { cat: 'eng', kind: 'spell', prompt: `<span class="big">${s[0]}</span>拼出这个单词<span class="sub">${s[2]}</span>`, answer: s[1], extra: g >= 2 ? 2 : 1, explain: `${s[1]}：${s[2]}`, sig: 'e4' + s[1], tts: s[1] };
+}
+
+/* ================= 题库：英语口语 ================= */
+const SENTENCES = [
+  ['Good morning, Miss Li.', '早上好，李老师。', 1], ['Nice to meet you.', '很高兴见到你。', 1], ['What is your name?', '你叫什么名字？', 1],
+  ['My name is Tom.', '我叫汤姆。', 1], ['How are you today?', '你今天好吗？', 1], ['I am fine, thank you.', '我很好，谢谢。', 1],
+  ['I have a red pencil.', '我有一支红色的铅笔。', 1], ['This is my mother.', '这是我的妈妈。', 1], ['I like apples very much.', '我非常喜欢苹果。', 1],
+  ['Look at the panda.', '看那只熊猫。', 1], ['Let us go to school.', '我们去上学吧。', 1], ['Happy birthday to you.', '祝你生日快乐。', 1],
+  ['How old are you?', '你几岁了？', 1], ['I am eight years old.', '我八岁了。', 1], ['Can I have some milk?', '我可以喝点牛奶吗？', 2],
+  ['What colour is your bag?', '你的书包是什么颜色的？', 2], ['Where is my ruler?', '我的尺子在哪里？', 2], ['It is under the desk.', '它在桌子下面。', 2],
+  ['I can swim and run.', '我会游泳和跑步。', 2], ['Do you like bananas?', '你喜欢香蕉吗？', 2], ['Yes, I do. They are sweet.', '是的，我喜欢。它们很甜。', 2],
+  ['There are four people in my family.', '我家有四口人。', 2], ['My father is a doctor.', '我爸爸是一名医生。', 2], ['Please close the door.', '请关上门。', 2],
+  ['The weather is sunny today.', '今天天气晴朗。', 2], ['I go to bed at nine.', '我九点睡觉。', 2], ['What can you see in the tree?', '你能看到树上有什么？', 2],
+  ['I can see a little bird.', '我能看到一只小鸟。', 2], ['Thank you for your help.', '谢谢你的帮助。', 2], ['Let us play football together.', '我们一起踢足球吧。', 2],
+  ['What time is it now?', '现在几点了？', 3], ['It is time for lunch.', '该吃午饭了。', 3], ['I usually get up at seven.', '我通常七点起床。', 3],
+  ['My favourite season is spring.', '我最喜欢的季节是春天。', 3], ['She has long hair and big eyes.', '她有长头发和大眼睛。', 3],
+  ['How many books do you have?', '你有多少本书？', 3], ['Would you like some juice?', '你想喝点果汁吗？', 3], ['We have English on Monday.', '我们星期一有英语课。', 3],
+  ['The cat is sleeping on the sofa.', '猫正在沙发上睡觉。', 3], ['Can you help me, please?', '你能帮帮我吗？', 3], ['I want to be a teacher.', '我想成为一名老师。', 3],
+  ['Let us clean the classroom.', '我们打扫教室吧。', 3], ['He goes to school by bus.', '他坐公交车上学。', 3], ['It is cold and windy outside.', '外面又冷又刮风。', 3],
+];
+function genSpeak(g) {
+  const pool = SENTENCES.filter(s => s[2] <= g && (g === 1 || s[2] >= g - 1));
+  const s = pick(pool);
+  return { cat: 'speak', kind: 'speak', prompt: `<span style="font-size:34px">${esc(s[0])}</span><span class="sub">${s[1]}</span>`, answer: s[0], explain: s[1], sig: 's' + s[0] };
+}
+const NUMW = ['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve'];
+const CONTR = { "i'm": 'i am', "it's": 'it is', "let's": 'let us', "don't": 'do not', "can't": 'can not', cannot: 'can not', "what's": 'what is', "that's": 'that is', "he's": 'he is', "she's": 'she is', "you're": 'you are', "we're": 'we are', "they're": 'they are', "isn't": 'is not', "aren't": 'are not', "where's": 'where is', o: '', "o'clock": 'oclock', colour: 'color', favourite: 'favorite', mom: 'mother', mum: 'mother' };
+function normWords(t) {
+  return t.toLowerCase().replace(/[’`]/g, "'").replace(/[^a-z0-9' ]/g, ' ').split(/\s+/).filter(Boolean)
+    .flatMap(w => { if (/^\d+$/.test(w) && NUMW[+w]) return [NUMW[+w]]; const c = CONTR[w]; return c === undefined ? [w] : c.split(' ').filter(Boolean); });
+}
+function matchWords(target, heard) {
+  const T = normWords(target), H = normWords(heard);
+  // LCS 对齐，标记每个目标词是否读到
+  const dp = Array.from({ length: T.length + 1 }, () => new Array(H.length + 1).fill(0));
+  for (let i = T.length - 1; i >= 0; i--) for (let j = H.length - 1; j >= 0; j--)
+    dp[i][j] = T[i] === H[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const hit = new Array(T.length).fill(false);
+  for (let i = 0, j = 0; i < T.length && j < H.length;) { if (T[i] === H[j]) { hit[i] = true; i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+  return { words: T, hit, score: T.length ? dp[0][0] / T.length : 0 };
+}
+
+/* ================= 题库：语文 ================= */
+const POEMS = [
+  ['静夜思', '李白', '床前明月光，疑是地上霜。举头望明月，低头思故乡。'],
+  ['春晓', '孟浩然', '春眠不觉晓，处处闻啼鸟。夜来风雨声，花落知多少。'],
+  ['登鹳雀楼', '王之涣', '白日依山尽，黄河入海流。欲穷千里目，更上一层楼。'],
+  ['悯农', '李绅', '锄禾日当午，汗滴禾下土。谁知盘中餐，粒粒皆辛苦。'],
+  ['江雪', '柳宗元', '千山鸟飞绝，万径人踪灭。孤舟蓑笠翁，独钓寒江雪。'],
+  ['寻隐者不遇', '贾岛', '松下问童子，言师采药去。只在此山中，云深不知处。'],
+  ['画', '王维', '远看山有色，近听水无声。春去花还在，人来鸟不惊。'],
+  ['池上', '白居易', '小娃撑小艇，偷采白莲回。不解藏踪迹，浮萍一道开。'],
+  ['所见', '袁枚', '牧童骑黄牛，歌声振林樾。意欲捕鸣蝉，忽然闭口立。'],
+  ['夜宿山寺', '李白', '危楼高百尺，手可摘星辰。不敢高声语，恐惊天上人。'],
+  ['古朗月行', '李白', '小时不识月，呼作白玉盘。又疑瑶台镜，飞在青云端。'],
+  ['梅花', '王安石', '墙角数枝梅，凌寒独自开。遥知不是雪，为有暗香来。'],
+  ['赠汪伦', '李白', '李白乘舟将欲行，忽闻岸上踏歌声。桃花潭水深千尺，不及汪伦送我情。'],
+  ['望庐山瀑布', '李白', '日照香炉生紫烟，遥看瀑布挂前川。飞流直下三千尺，疑是银河落九天。'],
+  ['绝句', '杜甫', '两个黄鹂鸣翠柳，一行白鹭上青天。窗含西岭千秋雪，门泊东吴万里船。'],
+  ['村居', '高鼎', '草长莺飞二月天，拂堤杨柳醉春烟。儿童散学归来早，忙趁东风放纸鸢。'],
+  ['小池', '杨万里', '泉眼无声惜细流，树阴照水爱晴柔。小荷才露尖尖角，早有蜻蜓立上头。'],
+  ['咏柳', '贺知章', '碧玉妆成一树高，万条垂下绿丝绦。不知细叶谁裁出，二月春风似剪刀。'],
+  ['山行', '杜牧', '远上寒山石径斜，白云生处有人家。停车坐爱枫林晚，霜叶红于二月花。'],
+  ['望天门山', '李白', '天门中断楚江开，碧水东流至此回。两岸青山相对出，孤帆一片日边来。'],
+  ['回乡偶书', '贺知章', '少小离家老大回，乡音无改鬓毛衰。儿童相见不相识，笑问客从何处来。'],
+  ['早发白帝城', '李白', '朝辞白帝彩云间，千里江陵一日还。两岸猿声啼不住，轻舟已过万重山。'],
+  ['小儿垂钓', '胡令能', '蓬头稚子学垂纶，侧坐莓苔草映身。路人借问遥招手，怕得鱼惊不应人。'],
+].map(([t, a, body]) => ({ t, a, lines: body.split(/[，。]/).filter(Boolean) }));
+const IDIOMS = ['画蛇添足','守株待兔','亡羊补牢','井底之蛙','对牛弹琴','狐假虎威','掩耳盗铃','拔苗助长','刻舟求剑','叶公好龙','自相矛盾','坐井观天','一心一意','三心二意','五颜六色','七上八下','九牛一毛','十全十美','万紫千红','鸟语花香','春暖花开','山清水秀','风和日丽','人山人海','兴高采烈','手舞足蹈','目不转睛','专心致志','半途而废','津津有味','争先恐后','一石二鸟','百发百中','闻鸡起舞','雪中送炭','杯弓蛇影','胸有成竹','画龙点睛','九死一生','千军万马'];
+const MEASURE = [ // 名词, 正确量词, 干扰
+  ['牛', '头', ['条', '张', '本']], ['马', '匹', ['张', '朵', '本']], ['鱼', '条', ['朵', '本', '座']], ['书', '本', ['条', '头', '朵']],
+  ['伞', '把', ['条', '朵', '头']], ['花', '朵', ['条', '本', '头']], ['树', '棵', ['张', '本', '朵']], ['山', '座', ['朵', '本', '条']],
+  ['鞋', '双', ['本', '朵', '座']], ['纸', '张', ['头', '朵', '座']], ['飞机', '架', ['条', '朵', '本']], ['小船', '艘', ['朵', '本', '头']],
+  ['灯', '盏', ['头', '朵', '本']], ['星星', '颗', ['本', '头', '座']], ['老师', '位', ['头', '条', '朵']], ['明月', '轮', ['本', '头', '张']],
+  ['镜子', '面', ['头', '朵', '条']], ['教室', '间', ['朵', '头', '条']], ['衣服', '件', ['朵', '座', '头']], ['小桥', '座', ['朵', '本', '张']],
+];
+const ANTONYM = [['大','小'],['多','少'],['高','矮'],['长','短'],['快','慢'],['胖','瘦'],['冷','热'],['远','近'],['开','关'],['早','晚'],['新','旧'],['轻','重'],['哭','笑'],['买','卖'],['深','浅'],['干','湿'],['甜','苦'],['真','假'],['美','丑'],['对','错'],['安静','热闹'],['勇敢','胆小'],['干净','肮脏'],['喜欢','讨厌'],['快乐','难过'],['聪明','愚笨'],['简单','复杂'],['危险','安全'],['寒冷','炎热'],['光明','黑暗'],['开始','结束'],['认真','马虎']];
+function genChn(g) {
+  const r = Math.random();
+  const allLines = POEMS.flatMap(p => p.lines);
+  if (r < 0.5) {
+    const p = pick(POEMS), kind = rnd(0, 2);
+    if (kind === 0) { // 接下句
+      const i = rnd(0, p.lines.length - 2), ans = p.lines[i + 1];
+      const opts = sampleOthers(allLines.filter(l => l.length === ans.length), p.lines, 3);
+      return { cat: 'chn', kind: 'choice', prompt: `《${p.t}》<span class="sub">${p.a}</span>「${p.lines[i]}，」下一句是？`, answer: ans, options: shuffle([ans, ...opts]), explain: `${p.lines[i]}，${ans}。`, sig: 'p1' + ans };
+    }
+    if (kind === 1) { // 补字
+      const line = pick(p.lines), k = rnd(0, line.length - 1), ch = line[k];
+      const pool = [...allLines.join('')].filter(c => !line.includes(c));
+      const opts = sampleOthers(pool, [ch], 3);
+      return { cat: 'chn', kind: 'choice', prompt: `《${p.t}》<span class="sub">${p.a}</span>补全诗句：「${line.slice(0, k)}<u>（ ）</u>${line.slice(k + 1)}」`, answer: ch, options: shuffle([ch, ...opts]), explain: `「${line}」`, sig: 'p2' + line + k };
+    }
+    const authors = sampleOthers(POEMS.map(x => x.a), [p.a], 3);
+    return { cat: 'chn', kind: 'choice', prompt: `「${p.lines[0]}，${p.lines[1]}。」<span class="sub">这首《${p.t}》的作者是谁？</span>`, answer: p.a, options: shuffle([p.a, ...authors]), explain: `《${p.t}》是${p.a}写的。`, sig: 'p3' + p.t };
+  }
+  if (r < 0.7) {
+    const w = pick(IDIOMS), k = rnd(0, 3), ch = w[k];
+    const opts = sampleOthers(IDIOMS.map(x => x[k]).concat(IDIOMS.map(x => x[(k + 1) % 4])), [ch], 3);
+    return { cat: 'chn', kind: 'choice', prompt: `补全成语：${w.slice(0, k)}<u>（ ）</u>${w.slice(k + 1)}`, answer: ch, options: shuffle([ch, ...opts]), explain: `「${w}」`, sig: 'i' + w + k };
+  }
+  if (r < 0.85) {
+    const m = pick(MEASURE);
+    return { cat: 'chn', kind: 'choice', prompt: `一（ ）${m[0]}<span class="sub">括号里填哪个量词？</span>`, answer: m[1], options: shuffle([m[1], ...m[2]]), explain: `一${m[1]}${m[0]}`, sig: 'q' + m[0] };
+  }
+  const pairs = ANTONYM.filter(p => g >= 2 || p[0].length === 1), pr = pick(pairs), rev = Math.random() < .5, w = rev ? pr[1] : pr[0], ans = rev ? pr[0] : pr[1];
+  const opts = sampleOthers(ANTONYM.flat().filter(x => x.length === ans.length), [w, ans], 3);
+  return { cat: 'chn', kind: 'choice', prompt: `「${w}」的反义词是？`, answer: ans, options: shuffle([ans, ...opts]), explain: `${w} ↔ ${ans}`, sig: 'a' + w };
+}
+
+/* ================= 出题 ================= */
+const CAT_NAME = { math: '数学', speak: '英语口语', eng: '英语', chn: '语文' };
+const GEN = { math: genMath, speak: genSpeak, eng: genEng, chn: genChn };
+function enabledCats() {
+  const t = S.settings.types, cats = Object.keys(GEN).filter(c => t[c] && !(c === 'speak' && !SR));
+  return cats.length ? cats : ['math'];
+}
+function nextQuestion(excludeCat) {
+  let cats = enabledCats();
+  if (excludeCat && cats.length > 1) cats = cats.filter(c => c !== excludeCat);
+  for (let i = 0; i < 30; i++) {
+    const q = GEN[pick(cats)](+S.settings.grade);
+    if (!S.recent.includes(q.sig) || i === 29) { S.recent.push(q.sig); S.recent = S.recent.slice(-60); save(); return q; }
+  }
+}
+
+/* ================= 视图 ================= */
+const views = ['setupView', 'statusView', 'quizView', 'parentView'];
+function show(id) { views.forEach(v => $('#' + v).classList.toggle('hidden', v !== id)); }
+let quiz = null; // { correct, q, skipLogged }
+let tick = null;
+
+function route() {
+  if (!S.settings.pin) return show('setupView');
+  if (!$('#parentView').classList.contains('hidden')) return;
+  if (Date.now() < S.passUntil) { show('statusView'); quiz = null; startTick(); }
+  else startQuiz();
+}
+function startTick() {
+  clearInterval(tick);
+  const upd = () => {
+    const left = S.passUntil - Date.now();
+    if (left <= 0) { clearInterval(tick); beep(); if ($('#parentView').classList.contains('hidden')) startQuiz(); return; }
+    const m = Math.floor(left / 60000), s = Math.floor(left / 1000) % 60;
+    $('#remain').textContent = `${m}:${String(s).padStart(2, '0')}`;
+  };
+  upd(); tick = setInterval(upd, 1000);
+}
+function startQuiz() {
+  clearInterval(tick);
+  if (!quiz) quiz = { correct: 0, skipLogged: false };
+  if (!$('#quizView').classList.contains('hidden') && quiz.q && !quiz.locked) return; // 正在答题：保留当前题，刷新页面也不能“换题”
+  show('quizView');
+  renderQuestion(quiz.q && !quiz.locked ? quiz.q : nextQuestion());
+}
+function grantPass(minutes) {
+  S.passUntil = Date.now() + minutes * 60000; save();
+  quiz = null; show('statusView'); startTick();
+  syncShortcut();
+}
+// 把“解锁到几点”交给快捷指令保存，供“检查答题”自动化判断
+function syncShortcut() {
+  const st = S.settings, on = st.link && Date.now() < S.passUntil;
+  $('#syncTip').classList.toggle('hidden', !on); $('#syncRow').classList.toggle('hidden', !on);
+  if (!on) return;
+  const mins = Math.ceil((S.passUntil - Date.now()) / 60000);
+  location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(st.scName || '答题解锁') + '&input=text&text=' + mins;
+}
+
+function renderQuestion(q) {
+  quiz.q = q; quiz.locked = false;
+  $('#qTag').textContent = CAT_NAME[q.cat];
+  $('#qProgress').textContent = `已答对 ${quiz.correct} / ${S.settings.need} 题`;
+  $('#qPrompt').innerHTML = q.prompt;
+  const fb = $('#qFeedback'); fb.className = 'feedback'; fb.textContent = '';
+  const body = $('#qBody'); body.innerHTML = '';
+  ({ num: renderNum, choice: renderChoice, spell: renderSpell, speak: renderSpeakQ })[q.kind](q, body);
+  if (q.listen) setTimeout(() => say(q.listen), 300);
+}
+
+function finish(ok, userAns) {
+  if (quiz.locked) return;
+  quiz.locked = true;
+  const q = quiz.q;
+  addLog({ cat: q.cat, q: q.prompt.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60), ok, a: String(userAns ?? '').slice(0, 40) });
+  const fb = $('#qFeedback');
+  if (ok) {
+    quiz.correct++;
+    fb.className = 'feedback ok';
+    fb.innerHTML = `🎉 答对了！${esc(q.explain || '')}`;
+    if (q.tts && q.cat === 'eng') say(q.tts);
+    setTimeout(() => {
+      if (quiz.correct >= S.settings.need) grantPass(+S.settings.interval);
+      else renderQuestion(nextQuestion());
+    }, 1600);
+  } else {
+    fb.className = 'feedback bad';
+    fb.innerHTML = `❌ 不对哦。正确答案：<b>${esc(q.answer)}</b><br>${esc(q.explain || '')}<br><span style="font-size:16px">再来一道新题！</span>`;
+    setTimeout(() => renderQuestion(nextQuestion(q.cat === 'speak' ? 'speak' : null)), 3800);
+  }
+}
+
+function renderNum(q, body) {
+  let val = '';
+  body.innerHTML = `<div class="display" id="numDisp">&nbsp;</div><div class="pad">${[1,2,3,4,5,6,7,8,9].map(n => `<button data-k="${n}">${n}</button>`).join('')}<button data-k="del">⌫</button><button data-k="0">0</button><button class="go" data-k="ok">确定</button></div>`;
+  const disp = body.querySelector('#numDisp');
+  body.querySelector('.pad').addEventListener('click', e => {
+    const k = e.target.dataset.k; if (!k || quiz.locked) return;
+    if (k === 'del') val = val.slice(0, -1);
+    else if (k === 'ok') { if (val) finish(+val === q.answer, val); return; }
+    else if (val.length < 5) val += k;
+    disp.innerHTML = val || '&nbsp;';
+  });
+}
+function renderChoice(q, body) {
+  body.innerHTML = `<div class="choices">${q.options.map((o, i) => `<button class="choice" data-i="${i}">${esc(o)}</button>`).join('')}</div>` +
+    (q.listen ? `<div class="row"><button class="btn" id="relisten">🔊 再听一次</button></div>` : '');
+  body.querySelectorAll('.choice').forEach(b => b.addEventListener('click', () => {
+    if (quiz.locked) return;
+    const o = q.options[+b.dataset.i], ok = o === q.answer;
+    b.classList.add(ok ? 'right' : 'wrong');
+    if (!ok) body.querySelectorAll('.choice').forEach(x => { if (q.options[+x.dataset.i] === q.answer) x.classList.add('right'); });
+    finish(ok, o);
+  }));
+  const rl = body.querySelector('#relisten'); if (rl) rl.onclick = () => say(q.listen);
+}
+function renderSpell(q, body) {
+  const word = q.answer;
+  const extras = sampleOthers('abcdefghijklmnoprstuwy'.split(''), [...word], q.extra);
+  const letters = shuffle([...word, ...extras]);
+  const picked = [];
+  body.innerHTML = `<div class="slots">${[...word].map(() => '<div class="slot"></div>').join('')}</div>
+    <div class="tiles">${letters.map((l, i) => `<button class="tile" data-i="${i}">${l}</button>`).join('')}</div>
+    <div class="row"><button class="btn" id="spDel">⌫ 退格</button>${canSpeak ? '<button class="btn" id="spHear">🔊 听发音</button>' : ''}</div>`;
+  const slots = body.querySelectorAll('.slot'), tiles = body.querySelectorAll('.tile');
+  const paint = () => slots.forEach((s, i) => s.textContent = picked[i] != null ? letters[picked[i]] : '');
+  tiles.forEach(t => t.addEventListener('click', () => {
+    if (quiz.locked || picked.length >= word.length) return;
+    picked.push(+t.dataset.i); t.disabled = true; paint();
+    if (picked.length === word.length) { const w = picked.map(i => letters[i]).join(''); finish(w === word, w); }
+  }));
+  body.querySelector('#spDel').onclick = () => { if (quiz.locked) return; const i = picked.pop(); if (i != null) tiles[i].disabled = false; paint(); };
+  const h = body.querySelector('#spHear'); if (h) h.onclick = () => say(word);
+}
+function renderSpeakQ(q, body) {
+  let tries = 0;
+  body.innerHTML = `<p class="hint">先听示范，再按下麦克风大声读出来（最多 3 次机会）。</p>
+    <div class="row"><button class="btn" id="spkDemo">🔊 听示范</button><button class="btn primary mic" id="spkMic">🎤 开始读</button></div>
+    <div class="words" id="spkWords"></div><p class="hint" id="spkHeard"></p>`;
+  const mic = body.querySelector('#spkMic'), wordsEl = body.querySelector('#spkWords'), heardEl = body.querySelector('#spkHeard');
+  body.querySelector('#spkDemo').onclick = () => say(q.answer, 'en-US', 0.8);
+  let rec = null, busy = false;
+  mic.onclick = () => {
+    if (quiz.locked) return;
+    if (busy) { try { rec.stop(); } catch (e) {} return; }
+    speechSynthesis && speechSynthesis.cancel();
+    rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 3;
+    let best = '', bestScore = -1, timer;
+    const evalText = t => { const m = matchWords(q.answer, t); if (m.score > bestScore) { bestScore = m.score; best = t; } return m; };
+    rec.onresult = e => {
+      for (let i = 0; i < e.results.length; i++) for (let k = 0; k < e.results[i].length; k++) evalText(e.results[i][k].transcript);
+      heardEl.textContent = '听到：' + best;
+    };
+    rec.onerror = e => { heardEl.textContent = e.error === 'not-allowed' ? '没有麦克风权限，请在设置里允许 Safari 使用麦克风。' : '没听清，再试一次（' + e.error + '）'; };
+    rec.onend = () => {
+      busy = false; clearTimeout(timer); mic.classList.remove('on'); mic.textContent = '🎤 开始读';
+      if (!best) return;
+      tries++;
+      const m = matchWords(q.answer, best);
+      wordsEl.innerHTML = m.words.map((w, i) => `<span class="${m.hit[i] ? 'w-ok' : 'w-miss'}">${esc(w)}</span>`).join(' ');
+      heardEl.textContent = `听到：${best}（匹配 ${Math.round(m.score * 100)}%）`;
+      if (m.score >= +S.settings.speakPass) finish(true, best);
+      else if (tries >= 3) finish(false, best);
+      else heardEl.textContent += `，红色的词再读清楚些，还有 ${3 - tries} 次机会`;
+    };
+    try { rec.start(); busy = true; mic.classList.add('on'); mic.textContent = '⏹ 读完了'; timer = setTimeout(() => { try { rec.stop(); } catch (e) {} }, 9000); }
+    catch (e) { heardEl.textContent = '语音识别启动失败：' + e.message; }
+  };
+}
+
+/* ================= 离开检测（未答题就切走） ================= */
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (quiz && !$('#quizView').classList.contains('hidden') && !quiz.skipLogged) { quiz.skipLogged = true; addLog({ ev: 'leave' }); }
+  } else route();
+});
+
+/* ================= 家长面板 ================= */
+function askPin() {
+  const p = prompt('请输入家长密码');
+  if (p === null) return false;
+  if (p === S.settings.pin) return true;
+  alert('密码错误'); return false;
+}
+function openParent() {
+  if (!askPin()) return;
+  clearInterval(tick);
+  const st = S.settings;
+  $('#sGrade').value = st.grade; $('#sInterval').value = st.interval; $('#sNeed').value = st.need; $('#sSpeakPass').value = st.speakPass; $('#sPin').value = '';
+  $('#sLink').checked = st.link; $('#sScName').value = st.scName;
+  $('#tMath').checked = st.types.math; $('#tSpeak').checked = st.types.speak; $('#tEng').checked = st.types.eng; $('#tChn').checked = st.types.chn;
+  $('#speechSupport').textContent = SR ? '✅ 本设备支持英语口语识别。' : '⚠️ 本浏览器不支持语音识别，口语题会自动跳过（iPad 上请用 Safari，并在 设置→Siri 中开启“听写”）。';
+  renderReport();
+  show('parentView');
+}
+function dayKey(t) { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; }
+function renderReport() {
+  const today = dayKey(Date.now());
+  const ans = S.log.filter(l => l.cat), tod = ans.filter(l => dayKey(l.t) === today), leaves = S.log.filter(l => l.ev === 'leave' && dayKey(l.t) === today).length;
+  const ok = tod.filter(l => l.ok).length;
+  $('#todayStats').innerHTML = [[tod.length, '今日答题'], [ok, '答对'], [tod.length ? Math.round(ok / tod.length * 100) + '%' : '—', '正确率'], [leaves, '未答就离开']]
+    .map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');
+  const days = [...Array(7)].map((_, i) => dayKey(Date.now() - i * 864e5));
+  $('#weekTable').innerHTML = '<tr><th>日期</th><th>答题</th><th>正确率</th><th>数学</th><th>口语</th><th>英语</th><th>语文</th><th>离开</th></tr>' + days.map(d => {
+    const L = ans.filter(l => dayKey(l.t) === d), c = cat => { const x = L.filter(l => l.cat === cat); return x.length ? `${x.filter(l => l.ok).length}/${x.length}` : '—'; };
+    return `<tr><td>${d}</td><td>${L.length}</td><td>${L.length ? Math.round(L.filter(l => l.ok).length / L.length * 100) + '%' : '—'}</td><td>${c('math')}</td><td>${c('speak')}</td><td>${c('eng')}</td><td>${c('chn')}</td><td>${S.log.filter(l => l.ev === 'leave' && dayKey(l.t) === d).length}</td></tr>`;
+  }).join('');
+  $('#logTable').innerHTML = '<tr><th>时间</th><th>类型</th><th>题目</th><th>回答</th></tr>' + S.log.slice(-40).reverse().map(l => {
+    const tm = new Date(l.t).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (l.ev === 'leave') return `<tr><td>${tm}</td><td colspan="3" class="bad-t">⚠️ 题目出现后未作答就离开了</td></tr>`;
+    if (l.ev === 'grant') return `<tr><td>${tm}</td><td colspan="3">家长解锁 ${l.m} 分钟</td></tr>`;
+    return `<tr><td>${tm}</td><td>${CAT_NAME[l.cat] || ''}</td><td>${esc(l.q)}</td><td class="${l.ok ? 'ok-t' : 'bad-t'}">${l.ok ? '✓' : '✗'} ${esc(l.a)}</td></tr>`;
+  }).join('');
+}
+$('#gearBtn').onclick = openParent;
+$('#parentClose').onclick = () => { show('statusView'); route(); };
+$('#saveSettings').onclick = () => {
+  const st = S.settings;
+  st.grade = +$('#sGrade').value; st.interval = Math.max(1, Math.min(120, +$('#sInterval').value || 10)); st.need = +$('#sNeed').value; st.speakPass = +$('#sSpeakPass').value;
+  st.types = { math: $('#tMath').checked, speak: $('#tSpeak').checked, eng: $('#tEng').checked, chn: $('#tChn').checked };
+  st.link = $('#sLink').checked; st.scName = $('#sScName').value.trim() || '答题解锁';
+  const np = $('#sPin').value.trim();
+  if (np) { if (!/^\d{4,8}$/.test(np)) return alert('密码需为 4–8 位数字'); st.pin = np; }
+  save(); alert('已保存');
+};
+$('#syncBtn').onclick = syncShortcut;
+$('#grant30').onclick = () => { addLog({ ev: 'grant', m: 30 }); grantPass(30); };
+$('#askNow').onclick = () => { S.passUntil = 0; save(); quiz = null; startQuiz(); };
+$('#clearLog').onclick = () => { if (confirm('确定清空所有答题记录？')) { S.log = []; save(); renderReport(); } };
+$('#setupOk').onclick = () => {
+  const p = $('#setupPin').value.trim();
+  if (!/^\d{4,8}$/.test(p)) return alert('请输入 4–8 位数字');
+  S.settings.pin = p; save(); route();
+};
+
+/* ================= 启动 ================= */
+load();
+if (canSpeak) speechSynthesis.getVoices();
+route();
+</script>
+</body>
+</html>
