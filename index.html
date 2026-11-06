@@ -495,8 +495,10 @@ function syncShortcut() {
   const st = S.settings, on = st.link && Date.now() < S.passUntil;
   $('#syncTip').classList.toggle('hidden', !on); $('#syncRow').classList.toggle('hidden', !on);
   if (!on) return;
-  const mins = Math.ceil((S.passUntil - Date.now()) / 60000);
-  location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(st.scName || '答题解锁') + '&input=text&text=' + mins;
+  // 传“到期时间”的数字形式 yyyyMMddHHmm（本机时间），快捷指令只需比较数字大小
+  const d = new Date(S.passUntil), p = n => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}`;
+  location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(st.scName || '答题解锁') + '&input=text&text=' + stamp;
 }
 
 function renderQuestion(q) {
