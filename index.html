@@ -103,8 +103,8 @@ h2{font-size:19px;margin:0 0 4px}
     <p>已解锁，可以继续使用</p>
     <div class="time" id="remain">10:00</div>
     <p>时间到后会自动出题。现在可以切回你刚才的 App 啦。</p>
-    <p class="hidden" id="syncTip" style="font-size:16px">如果弹出“在快捷指令中打开”，请点<b>打开</b>，否则还会被带回这里。</p>
-    <div class="row hidden" id="syncRow" style="justify-content:center"><button class="btn" id="syncBtn">🔄 重新同步解锁</button></div>
+    <div class="row hidden" id="syncRow" style="justify-content:center"><button class="btn primary" id="syncBtn" style="font-size:24px;padding:18px 28px">🔓 点这里完成解锁</button></div>
+    <p class="hidden" id="syncTip" style="font-size:16px">⚠️ 一定要点上面的按钮，弹出“在快捷指令中打开”时点<b>打开</b>，否则打开游戏还会被带回这里。<br><span id="syncStamp" style="color:var(--muted)"></span></p>
   </section>
 
   <!-- 答题 -->
@@ -178,6 +178,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 const sampleOthers = (pool, exclude, n) => shuffle([...new Set(pool)].filter(x => !exclude.includes(x))).slice(0, n);
 
 /* ================= 存储 ================= */
+const VERSION = 'v4';
 const KEY = 'quizgate_v1';
 const DEFAULTS = { pin: null, grade: 2, interval: 10, need: 1, types: { math: true, speak: true, eng: true, chn: true }, speakPass: 0.75, link: false, scName: '答题解锁' };
 let S;
@@ -465,7 +466,7 @@ let tick = null;
 function route() {
   if (!S.settings.pin) return show('setupView');
   if (!$('#parentView').classList.contains('hidden')) return;
-  if (Date.now() < S.passUntil) { show('statusView'); quiz = null; startTick(); }
+  if (Date.now() < S.passUntil) { show('statusView'); quiz = null; startTick(); syncShortcut(false); }
   else startQuiz();
 }
 function startTick() {
@@ -491,13 +492,15 @@ function grantPass(minutes) {
   syncShortcut();
 }
 // 把“解锁到几点”交给快捷指令保存，供“检查答题”自动化判断
-function syncShortcut() {
+function syncShortcut(fromTap) {
   const st = S.settings, on = st.link && Date.now() < S.passUntil;
   $('#syncTip').classList.toggle('hidden', !on); $('#syncRow').classList.toggle('hidden', !on);
   if (!on) return;
   // 传“到期时间”的数字形式 yyyyMMddHHmm（本机时间），快捷指令只需比较数字大小
   const d = new Date(S.passUntil), p = n => String(n).padStart(2, '0');
   const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}`;
+  $('#syncStamp').textContent = `（传给快捷指令「${st.scName || '答题解锁'}」的到期时间：${stamp}　网页版本 ${VERSION}）`;
+  if (!fromTap) return; // 只在点击按钮时跳转：Safari 会拦截非点击触发的 App 跳转
   location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(st.scName || '答题解锁') + '&input=text&text=' + stamp;
 }
 
@@ -633,7 +636,7 @@ function openParent() {
   $('#sGrade').value = st.grade; $('#sInterval').value = st.interval; $('#sNeed').value = st.need; $('#sSpeakPass').value = st.speakPass; $('#sPin').value = '';
   $('#sLink').checked = st.link; $('#sScName').value = st.scName;
   $('#tMath').checked = st.types.math; $('#tSpeak').checked = st.types.speak; $('#tEng').checked = st.types.eng; $('#tChn').checked = st.types.chn;
-  $('#speechSupport').textContent = SR ? '✅ 本设备支持英语口语识别。' : '⚠️ 本浏览器不支持语音识别，口语题会自动跳过（iPad 上请用 Safari，并在 设置→Siri 中开启“听写”）。';
+  $('#speechSupport').textContent = `网页版本 ${VERSION}。` + (SR ? '✅ 本设备支持英语口语识别。' : '⚠️ 本浏览器不支持语音识别，口语题会自动跳过（iPad 上请用 Safari，并在 设置→Siri 中开启“听写”）。');
   renderReport();
   show('parentView');
 }
@@ -667,7 +670,7 @@ $('#saveSettings').onclick = () => {
   if (np) { if (!/^\d{4,8}$/.test(np)) return alert('密码需为 4–8 位数字'); st.pin = np; }
   save(); alert('已保存');
 };
-$('#syncBtn').onclick = syncShortcut;
+$('#syncBtn').onclick = () => syncShortcut(true);
 $('#grant30').onclick = () => { addLog({ ev: 'grant', m: 30 }); grantPass(30); };
 $('#askNow').onclick = () => { S.passUntil = 0; save(); quiz = null; startQuiz(); };
 $('#clearLog').onclick = () => { if (confirm('确定清空所有答题记录？')) { S.log = []; save(); renderReport(); } };
